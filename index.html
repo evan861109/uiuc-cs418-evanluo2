@@ -17,6 +17,7 @@ var sampler2_uniform;
 var teapot_vao;
 var vert_pos_attr;
 var vert_normal_attr;
+var vert_texcoord_attr;
 
 //
 // a default vertex shader implemented as a backquoted string variable
@@ -62,11 +63,11 @@ uniform sampler2D uSampler2;
 out vec4 outColor;
     
 void main() {
-  vec3 uPointLightingLocation = vec3(12.0, 15.0, 15.0);
+  vec3 uPointLightingLocation = vec3(100.0, 120.0, 200.0);
   vec3 uPointLightingSpecularColor = vec3(1.0, 1.0, 1.0);
-  vec3 uPointLightingDiffuseColor = vec3(1.0, 1.0, 1.0);
-  vec3 uAmbientColor = vec3(0.5, 0.5, 0.5);
-  float uMaterialShininess = 10.0;
+  vec3 uPointLightingDiffuseColor = vec3(0.8, 0.8, 0.8);
+  vec3 uAmbientColor = vec3(0.1, 0.1, 0.1);
+  float uMaterialShininess = 30.0;
 
   vec3 eyeDirection = normalize(-vPosition.xyz);
   vec3 lightDirection = normalize(uPointLightingLocation - vPosition.xyz);
@@ -77,12 +78,12 @@ void main() {
   float diffuseLightWeighting = max(dot(normal, lightDirection), 0.0);
   vec3 lightWeighting = uAmbientColor + uPointLightingSpecularColor * specularLightWeighting + uPointLightingDiffuseColor * diffuseLightWeighting;
 
-  vec3 illinois = vec3(texture(uSampler, vTexCoord));
-  vec3 fragmentColor = illinois;
+  vec4 fragmentColor = texture(uSampler, vTexCoord);
+  float m = 2.0 * sqrt(pow(reflectionDirection.x, 2.0) + pow(reflectionDirection.y, 2.0) + pow(reflectionDirection.z+1.0, 2.0));
+  fragmentColor.xyz *= 0.8;
+  fragmentColor += 0.5 * texture(uSampler2, vec2(reflectionDirection.x / m + 0.5, reflectionDirection.y / m + 0.5));
 
-  vec3 stadium = vec3(texture(uSampler2, vTexCoord));
-
-  outColor = vec4(fragmentColor.rgb * lightWeighting, 1.0);
+  outColor = vec4(fragmentColor.rgb * lightWeighting, fragmentColor.a);
 }
 `;
 
@@ -144,6 +145,25 @@ function initwebgl() {
 
   gl.enableVertexAttribArray(vert_normal_attr);
   gl.vertexAttribPointer(vert_normal_attr, 3, gl.FLOAT, false, 0, 0);
+
+  // texcoords
+  
+  var cylinder_texcoord = new Array(teapot.positions.length*2);
+
+  for (var i = 0; i < teapot.positions.length; i += 3) {
+    var theta = Math.atan2(teapot.positions[3 * i + 2] / teapot.positions[3 * i]);
+    cylinder_texcoord[2*i] = (theta+Math.PI) / (2*Math.PI);
+    cylinder_texcoord[2*i + 1] = teapot.positions[3 * i + 1]/;
+    //cylinder_texcoord[2*i] = teapot.positions[3 * i];
+    //cylinder_texcoord[2*i + 1] = teapot.positions[3 * i + 1];
+  }
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER,
+                new Float32Array(cylinder_texcoord),
+                gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(vert_texcoord_attr);
+  gl.vertexAttribPointer(vert_texcoord_attr, 2, gl.FLOAT, false, 0, 0);
 
   // create an index buffer of triangle faces
 
@@ -248,6 +268,7 @@ function loadshaders(vertexShaderSource,fragmentShaderSource) {
 
   vert_pos_attr = gl.getAttribLocation(shaderProgram, "aVertexPosition");
   vert_normal_attr = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+  vert_texcoord_attr = gl.getAttribLocation(shaderProgram, "aTexCoord");
   modelview_uniform = gl.getUniformLocation(shaderProgram, "uModelViewMatrix"); 
   normal_uniform = gl.getUniformLocation(shaderProgram, "uNormalMatrix"); 
   projection_uniform = gl.getUniformLocation(shaderProgram, "uProjectionMatrix"); 
