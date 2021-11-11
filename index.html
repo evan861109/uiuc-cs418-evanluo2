@@ -83,9 +83,8 @@ void main() {
 
   vec3 lighting = ambient + diffuse * diffuseColor + specular * specularColor;
 
-  float angle = (atan(vObjCoords.x, vObjCoords.z)+3.14159/2.0)/(2.0*3.14159);
-  vec2 texcoords = vec2(angle, vObjCoords.y*2.5);
-  
+  float angle = (atan(vObjCoords.x, vObjCoords.z) + 1.57079633)/(2.0*3.1415926);
+  vec2 texcoords = vec2(angle, vObjCoords.y*2.0);
   vec4 fragmentColor = texture(uSampler, texcoords+vec2(0.5));
 
   fragmentColor.xyz *= 0.5;
